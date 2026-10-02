@@ -1,0 +1,233 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>佔領空地｜工作進度甘特圖</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+ --bg:#f3eee2;--card:#fbf8f0;--ink:#2b2a22;--mute:#75705f;--line:#d8d0bb;--acc:#4a6b3a;--accbg:#c9dcb4;
+ --today:#b0413e;--open:#8a4fa0;--weekend:#00000008;--wknum:#e0b65a66}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1d18;--card:#25261f;--ink:#e9e5d6;--mute:#a19c88;--line:#3a3b30;--acc:#a6c98a;--accbg:#3c4a30;--weekend:#ffffff08;--wknum:#e0b65a55}}
+:root[data-theme="dark"]{--bg:#1c1d18;--card:#25261f;--ink:#e9e5d6;--mute:#a19c88;--line:#3a3b30;--acc:#a6c98a;--accbg:#3c4a30;--weekend:#ffffff08;--wknum:#e0b65a55}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Noto Serif TC","Songti TC",PMingLiU,serif}
+main{width:100%;margin:0;padding:16px clamp(10px,2vw,28px) 40px}
+h1{font-size:21px;margin:.1em 0 .15em}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--mute);font-size:12.5px;margin-bottom:10px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:14px;height:10px;border-radius:3px;background:var(--acc);display:inline-block}
+.sw.pk{background:transparent;border:1.5px dashed var(--acc)}
+.ln{width:14px;height:2px;display:inline-block}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:10px;font-size:13px;color:var(--mute)}
+.toolbar input[type=range]{vertical-align:middle;accent-color:var(--acc)}
+.toolbar button{font:inherit;font-size:12.5px;padding:4px 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);cursor:pointer}
+#gBox{overflow:auto;max-height:76vh;width:100%;border:1px solid var(--line);border-radius:10px;position:relative;background:var(--card)}
+#content{position:relative}
+.headRow{display:flex;height:40px;position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+.labelHead{position:sticky;left:0;z-index:6;background:var(--card);border-right:1px solid var(--line);display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--mute);flex:none}
+.daysHead{position:relative;flex:none}
+.mLbl{position:absolute;top:1px;font-size:11px;font-weight:700;color:var(--acc);white-space:nowrap}
+.dLbl{position:absolute;top:19px;font-size:10px;text-align:center;color:var(--mute)}
+.dLbl.wkd{background:var(--wknum);border-radius:4px;color:var(--ink);font-weight:700}
+.row{display:flex;height:38px;position:relative;border-bottom:1px solid var(--line)}
+.labelCell{position:sticky;left:0;z-index:3;background:var(--card);border-right:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 10px;font-size:12px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.labelCell .nm{overflow:hidden;text-overflow:ellipsis}
+.num{color:var(--mute);font-size:11px}
+.track{position:relative;flex:none}
+.wk{position:absolute;top:0;bottom:0;background:var(--weekend)}
+.bar{position:absolute;top:6px;bottom:6px;border-radius:7px;background:var(--acc);cursor:pointer;display:flex;align-items:center;padding:0 7px;color:#fff;font-size:11.5px;overflow:hidden;white-space:nowrap;border:1px solid #0002}
+.bar.pk{background:transparent;border:1.5px dashed var(--acc);color:var(--ink)}
+.bar.open{outline:2px solid var(--today)}
+.guide{position:absolute;top:40px;bottom:0;width:0;border-left:2px solid var(--today);z-index:4;pointer-events:none}
+.guide.open-d{border-left:2px dashed var(--open)}
+.resizer{position:sticky;top:0;z-index:7;width:7px;margin-left:-7px;cursor:col-resize;background:transparent}
+.resizer:hover,.resizer.drag{background:var(--open);opacity:.5}
+.detail{display:none;position:sticky;left:10px;width:min(560px,88vw);margin:6px 0 10px;background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:8px;padding:10px 12px;font-size:13px}
+.detail.show{display:block}
+.detail b{display:block;margin-bottom:4px}
+.detail .meta{color:var(--mute);font-size:12px;margin-bottom:8px}
+.swrow{display:flex;gap:6px;margin-bottom:8px}
+.csw{width:20px;height:20px;border-radius:5px;border:2px solid transparent;cursor:pointer;padding:0}
+.csw.active{border-color:var(--ink)}
+.noteBox{width:100%;min-height:64px;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--card);color:var(--ink);resize:vertical}
+.hint{font-size:12px;color:var(--mute)}
+</style></head><body><main>
+<h1>工作進度甘特圖（原型）</h1>
+<div class="legend">
+ <span><i class="sw"></i>工作期間</span>
+ <span><i class="sw pk"></i>擇一日任務</span>
+ <span><i class="sw" style="background:var(--wknum);border-radius:4px"></i>週六日</span>
+ <span><i class="ln" style="background:var(--today)"></i>今天（會隨日期自動往前移）</span>
+ <span><i class="ln" style="border-top:2px dashed var(--open);background:transparent;height:0"></i>12/19 開展</span>
+ <span>點長條展開備註／換色</span>
+</div>
+<div class="toolbar">
+ <label>欄寬縮放　<input type="range" id="zoom" min="10" max="40" value="20"></label>
+ <span class="hint">｜拖曳名稱欄右側邊線可調整欄寬</span>
+ <button id="resetBtn">重置顯示設定（欄寬／顏色／備註）</button>
+</div>
+<div id="gBox"><div id="content"></div></div>
+</main>
+<script>
+const DAY=86400000;
+const START=new Date(2026,9,2), END=new Date(2027,0,17);
+const OPEN=new Date(2026,11,19);
+const N=Math.round((END-START)/DAY)+1;
+let dayW=20, labelW=196;
+const idx=d=>Math.round((d-START)/DAY);
+const fmt=d=>(d.getMonth()+1)+'/'+d.getDate();
+
+const PALETTE=['#8fae6a','#6fa34c','#4a6b3a','#9ac2b0','#5c8f82','#b7a65a','#8a7a3a','#a98a66'];
+
+const TASKS=[
+ {i:1,n:'種植',s:new Date(2026,9,2),e:new Date(2027,0,17)},
+ {i:2,n:'個人紀錄',s:new Date(2026,9,2),e:new Date(2026,11,10)},
+ {i:3,n:'懷石料理實地考察（擇一日）',s:new Date(2026,9,26),e:new Date(2026,10,2),pick:true},
+ {i:4,n:'展覽期間',s:new Date(2026,11,19),e:new Date(2027,0,17)},
+ {i:5,n:'土壤採樣試燒',s:new Date(2026,9,6),e:new Date(2026,9,31)},
+ {i:6,n:'器皿設計及燒製',s:new Date(2026,10,1),e:new Date(2026,10,30)},
+ {i:7,n:'食材採收與預處理（醃漬）',s:new Date(2026,10,12),e:new Date(2027,0,17)},
+ {i:8,n:'食物設計',s:new Date(2026,10,1),e:new Date(2026,10,30)},
+ {i:9,n:'佈展',s:new Date(2026,11,11),e:new Date(2026,11,16)},
+ {i:10,n:'展覽執行演練',s:new Date(2026,11,17),e:new Date(2026,11,18)},
+ {i:11,n:'餐桌視覺設計',s:new Date(2026,10,12),e:new Date(2026,10,18)},
+ {i:12,n:'展覽氛圍設計',s:new Date(2026,10,12),e:new Date(2026,10,18)},
+ {i:13,n:'服務流程設計',s:new Date(2026,11,11),e:new Date(2026,11,16)},
+ {i:14,n:'紀錄片',s:new Date(2026,9,2),e:new Date(2026,11,10)},
+ {i:15,n:'社群媒體管理',s:new Date(2026,9,2),e:new Date(2027,0,17)},
+];
+
+const LS_KEY='occupyGantt_v1';
+function loadState(){
+ try{
+  const raw=localStorage.getItem(LS_KEY);
+  if(!raw)return;
+  const st=JSON.parse(raw);
+  if(st.dayW)dayW=st.dayW;
+  if(st.labelW)labelW=st.labelW;
+  TASKS.forEach(t=>{
+   if(st.notes&&st.notes[t.i]!=null)t.note=st.notes[t.i];
+   if(st.colors&&st.colors[t.i])t.color=st.colors[t.i];
+  });
+ }catch(e){/* no saved state */}
+}
+function saveState(){
+ try{
+  const notes={},colors={};
+  TASKS.forEach(t=>{if(t.note)notes[t.i]=t.note;if(t.color)colors[t.i]=t.color;});
+  localStorage.setItem(LS_KEY,JSON.stringify({dayW,labelW,notes,colors}));
+ }catch(e){/* storage unavailable, skip */}
+}
+loadState();
+
+const content=document.getElementById('content');
+
+function render(){
+ content.innerHTML='';
+ const totalW=labelW+N*dayW;
+ content.style.width=totalW+'px';
+
+ const head=document.createElement('div');head.className='headRow';
+ const lh=document.createElement('div');lh.className='labelHead';lh.style.width=labelW+'px';lh.textContent='工作項目';
+ head.appendChild(lh);
+ const rez=document.createElement('div');rez.className='resizer';rez.style.left=labelW+'px';rez.style.height='100%';
+ head.appendChild(rez);
+ const daysHead=document.createElement('div');daysHead.className='daysHead';daysHead.style.width=(N*dayW)+'px';
+ for(let i=0;i<N;i++){
+  const d=new Date(START.getTime()+i*DAY);
+  if(d.getDate()===1||i===0){
+    const m=document.createElement('div');m.className='mLbl';
+    m.style.left=(i*dayW+2)+'px';m.textContent=(d.getMonth()+1)+'月';
+    daysHead.appendChild(m);
+  }
+  const dl=document.createElement('div');dl.className='dLbl'+((d.getDay()===0||d.getDay()===6)?' wkd':'');
+  dl.style.left=(i*dayW)+'px';dl.style.width=dayW+'px';dl.textContent=d.getDate();
+  daysHead.appendChild(dl);
+ }
+ head.appendChild(daysHead);content.appendChild(head);
+
+ const wkLayer=document.createElement('div');wkLayer.style.position='absolute';wkLayer.style.top='40px';wkLayer.style.left=labelW+'px';wkLayer.style.pointerEvents='none';
+ for(let i=0;i<N;i++){
+  const d=new Date(START.getTime()+i*DAY);
+  if(d.getDay()===0||d.getDay()===6){
+    const w=document.createElement('div');w.className='wk';
+    w.style.left=(i*dayW)+'px';w.style.width=dayW+'px';w.style.bottom='0';
+    wkLayer.appendChild(w);
+  }
+ }
+ content.appendChild(wkLayer);
+
+ TASKS.forEach(t=>{
+  const row=document.createElement('div');row.className='row';
+  row.innerHTML=`<div class="labelCell" title="${t.n}" style="width:${labelW}px"><span class="num">${t.i}.</span><span class="nm">${t.n}</span></div>`;
+  const track=document.createElement('div');track.className='track';track.style.width=(N*dayW)+'px';
+  const s=idx(t.s),e=idx(t.e);
+  const bar=document.createElement('div');
+  bar.className='bar'+(t.pick?' pk':'');
+  bar.style.left=(s*dayW+1)+'px';bar.style.width=((e-s+1)*dayW-2)+'px';
+  bar.textContent=t.n;
+  if(t.color){ t.pick ? (bar.style.borderColor=t.color, bar.style.color='var(--ink)') : (bar.style.background=t.color); }
+
+  const det=document.createElement('div');det.className='detail';
+  det.innerHTML=`<b>${t.i}. ${t.n}</b><div class="meta">${fmt(t.s)} – ${fmt(t.e)}</div>
+   <div class="swrow"></div><textarea class="noteBox" placeholder="在這裡輸入備註…"></textarea>`;
+  const swrow=det.querySelector('.swrow');
+  PALETTE.forEach(c=>{
+   const b=document.createElement('button');b.className='csw'+(t.color===c?' active':'');
+   b.style.background=c;b.setAttribute('aria-label','選擇顏色 '+c);
+   b.onclick=(ev)=>{ev.stopPropagation();t.color=c;
+    swrow.querySelectorAll('.csw').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    if(t.pick){bar.style.borderColor=c;bar.style.color='var(--ink)';}else{bar.style.background=c;}
+    saveState();};
+   swrow.appendChild(b);
+  });
+  const ta=det.querySelector('textarea');ta.value=t.note||'';
+  let saveT;
+  ta.oninput=()=>{t.note=ta.value;clearTimeout(saveT);saveT=setTimeout(saveState,400);};
+  ta.onclick=ev=>ev.stopPropagation();
+
+  bar.onclick=()=>{bar.classList.toggle('open');det.classList.toggle('show');};
+  track.appendChild(bar);row.appendChild(track);
+  content.appendChild(row);content.appendChild(det);
+ });
+
+ const today=new Date();today.setHours(0,0,0,0);
+ drawGuide(OPEN,'open-d');
+ if(today>=START&&today<=END)drawGuide(today,'');
+}
+
+function drawGuide(date,cls){
+ const g=document.createElement('div');g.className='guide '+cls;
+ g.style.left=(labelW+idx(date)*dayW+dayW/2)+'px';
+ g.style.height=content.scrollHeight+'px';
+ content.appendChild(g);
+}
+
+render();
+
+document.getElementById('zoom').oninput=e=>{dayW=+e.target.value;render();};
+document.getElementById('resetBtn').onclick=()=>{
+ dayW=20;labelW=196;
+ TASKS.forEach(t=>{delete t.note;delete t.color;});
+ try{localStorage.removeItem(LS_KEY);}catch(e){}
+ document.getElementById('zoom').value=20;
+ render();
+};
+
+(function(){
+ let dragging=false,startX=0,startW=labelW;
+ content.addEventListener('mousedown',e=>{
+  if(!e.target.classList.contains('resizer'))return;
+  dragging=true;startX=e.clientX;startW=labelW;e.target.classList.add('drag');
+  document.body.style.userSelect='none';
+ });
+ window.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  labelW=Math.max(100,Math.min(340,startW+(e.clientX-startX)));
+  render();
+ });
+ window.addEventListener('mouseup',()=>{
+  if(!dragging)return;dragging=false;document.body.style.userSelect='';
+  saveState();
+ });
+})();
+</script>
+</body></html>
